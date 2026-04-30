@@ -1,0 +1,500 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tabata Interval Timer</title>
+  <style>
+    :root {
+      --bg: #08111f;
+      --panel: rgba(255,255,255,0.08);
+      --panel-border: rgba(255,255,255,0.14);
+      --text: #eef4ff;
+      --muted: rgba(238,244,255,0.72);
+      --work: #ff1f5a;
+      --rest: #00c2ff;
+      --ready: #8b5cf6;
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Inter, Arial, Helvetica, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #152746 0%, #08111f 48%, #030712 100%);
+  overflow: hidden;
+}
+
+body.phase-work {
+  background: radial-gradient(circle at center, rgba(255,31,90,0.55) 0%, rgba(130,0,40,0.78) 35%, #14020a 100%);
+  animation: flashWork 0.75s infinite;
+}
+
+body.phase-rest {
+  background: radial-gradient(circle at center, rgba(0,194,255,0.45) 0%, rgba(0,90,130,0.72) 35%, #03131a 100%);
+  animation: pulseRest 1.25s infinite;
+}
+
+body.phase-ready {
+  background: radial-gradient(circle at top, rgba(139,92,246,0.35) 0%, #08111f 55%, #030712 100%);
+  animation: none;
+}
+
+@keyframes flashWork {
+  0%, 100% {
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(1.55) brightness(1.18);
+  }
+}
+
+@keyframes pulseRest {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+}
+
+.glow {
+  position: fixed;
+  inset: -15%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), transparent 28%),
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08), transparent 20%),
+    radial-gradient(circle at 80% 25%, rgba(255,255,255,0.05), transparent 18%);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.card {
+  width: min(92vw, 460px);
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 32px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--muted);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 18px currentColor;
+}
+
+.title {
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-bottom: 8px;
+}
+
+.phase {
+  font-size: clamp(34px, 8vw, 52px);
+  font-weight: 800;
+  line-height: 1;
+  margin: 0 0 8px;
+  letter-spacing: -0.04em;
+}
+
+.timer {
+  font-size: clamp(76px, 18vw, 128px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  margin: 10px 0 14px;
+  text-shadow: 0 0 28px rgba(255,255,255,0.14);
+}
+
+.substats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 18px 0 24px;
+}
+
+.stat {
+  border-radius: 20px;
+  padding: 14px 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 20px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.primary {
+  background: linear-gradient(135deg, rgba(255,255,255,0.94), rgba(220,230,255,0.9));
+  color: #09111d;
+  box-shadow: 0 14px 30px rgba(255,255,255,0.18);
+}
+
+.secondary {
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.settings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.setting {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.setting label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+
+.setting input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(255,255,255,0.08);
+}
+
+.footer {
+  margin-top: 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 420px) {
+  .card {
+    padding: 18px;
+    border-radius: 26px;
+  }
+
+  .settings {
+    grid-template-columns: 1fr;
+  }
+}
+
+  </style>
+</head>
+<body class="phase-ready">
+  <div class="glow"></div>
+  <main class="app">
+    <section class="card">
+      <div class="topbar">
+        <div class="badge" id="modeBadge">
+          <span class="dot"></span>
+          Ready
+        </div>
+        <div class="badge">Tabata 20:10</div>
+      </div><div class="title">Tabata Interval Timer</div>
+  <h1 class="phase" id="phaseLabel">Ready</h1>
+  <div class="timer" id="timerDisplay">20</div>
+
+  <div class="substats">
+    <div class="stat">
+      <div class="stat-label">Round</div>
+      <div class="stat-value" id="roundDisplay">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total</div>
+      <div class="stat-value" id="totalRoundsDisplay">8</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">State</div>
+      <div class="stat-value" id="stateMini">Idle</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="startPauseBtn">Start</button>
+    <button class="secondary" id="resetBtn">Reset</button>
+  </div>
+
+  <div class="settings">
+    <div class="setting">
+      <label for="workInput">Work</label>
+      <input id="workInput" type="number" min="1" max="999" value="20" />
+    </div>
+    <div class="setting">
+      <label for="restInput">Rest</label>
+      <input id="restInput" type="number" min="1" max="999" value="10" />
+    </div>
+    <div class="setting">
+      <label for="roundsInput">Rounds</label>
+      <input id="roundsInput" type="number" min="1" max="99" value="8" />
+    </div>
+  </div>
+
+  <div class="footer">Built to glare at you during work and chill during rest.</div>
+</section>
+
+  </main>  <script>
+    const body = document.body;
+    const timerDisplay = document.getElementById('timerDisplay');
+    const phaseLabel = document.getElementById('phaseLabel');
+    const roundDisplay = document.getElementById('roundDisplay');
+    const totalRoundsDisplay = document.getElementById('totalRoundsDisplay');
+    const stateMini = document.getElementById('stateMini');
+    const modeBadge = document.getElementById('modeBadge');
+    const startPauseBtn = document.getElementById('startPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const workInput = document.getElementById('workInput');
+    const restInput = document.getElementById('restInput');
+    const roundsInput = document.getElementById('roundsInput');
+
+    let timer = null;
+    let isRunning = false;
+    let phase = 'ready';
+    let round = 0;
+    let remaining = Number(workInput.value);
+
+    function clampInput(input, fallback) {
+      const value = Number(input.value);
+      if (!Number.isFinite(value) || value < 1) return fallback;
+      return Math.floor(value);
+    }
+
+    function getSettings() {
+      return {
+        work: clampInput(workInput, 20),
+        rest: clampInput(restInput, 10),
+        rounds: clampInput(roundsInput, 8)
+      };
+    }
+
+    function updateTheme() {
+      body.classList.remove('phase-work', 'phase-rest', 'phase-ready');
+      body.classList.add(`phase-${phase}`);
+
+      const labels = {
+        ready: 'Ready',
+        work: 'WORK',
+        rest: 'REST',
+        done: 'DONE'
+      };
+
+      const mini = {
+        ready: 'Idle',
+        work: 'Push',
+        rest: 'Breathe',
+        done: 'Done'
+      };
+
+      const colors = {
+        ready: '#8b5cf6',
+        work: '#ff1f5a',
+        rest: '#00c2ff',
+        done: '#22c55e'
+      };
+
+      phaseLabel.textContent = labels[phase] || 'Ready';
+      stateMini.textContent = mini[phase] || 'Idle';
+      modeBadge.style.color = colors[phase] || '#8b5cf6';
+      modeBadge.innerHTML = `<span class="dot"></span>${labels[phase] || 'Ready'}`;
+    }
+
+    function render() {
+      const settings = getSettings();
+      totalRoundsDisplay.textContent = settings.rounds;
+      roundDisplay.textContent = round;
+      timerDisplay.textContent = remaining;
+      updateTheme();
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timer = null;
+      isRunning = false;
+      phase = 'ready';
+      round = 0;
+      remaining = getSettings().work;
+      startPauseBtn.textContent = 'Start';
+      workInput.disabled = false;
+      restInput.disabled = false;
+      roundsInput.disabled = false;
+      render();
+    }
+
+    function finishTimer() {
+      clearInterval(timer);
+      timer = null;
+      isRunning = false;
+      phase = 'done';
+      remaining = 0;
+      startPauseBtn.textContent = 'Start Again';
+      workInput.disabled = false;
+      restInput.disabled = false;
+      roundsInput.disabled = false;
+      render();
+    }
+
+    function tick() {
+      if (remaining > 1) {
+        remaining -= 1;
+        render();
+        return;
+      }
+
+      const settings = getSettings();
+
+      if (phase === 'work') {
+        phase = 'rest';
+        remaining = settings.rest;
+        render();
+        return;
+      }
+
+      if (phase === 'rest') {
+        if (round >= settings.rounds) {
+          finishTimer();
+          return;
+        }
+        round += 1;
+        phase = 'work';
+        remaining = settings.work;
+        render();
+      }
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+
+      const settings = getSettings();
+      workInput.value = settings.work;
+      restInput.value = settings.rest;
+      roundsInput.value = settings.rounds;
+
+      if (phase === 'ready' || phase === 'done') {
+        round = 1;
+        phase = 'work';
+        remaining = settings.work;
+      }
+
+      isRunning = true;
+      startPauseBtn.textContent = 'Pause';
+      workInput.disabled = true;
+      restInput.disabled = true;
+      roundsInput.disabled = true;
+      render();
+      timer = setInterval(tick, 1000);
+    }
+
+    function pauseTimer() {
+      clearInterval(timer);
+      timer = null;
+      isRunning = false;
+      startPauseBtn.textContent = 'Resume';
+    }
+
+    startPauseBtn.addEventListener('click', () => {
+      if (isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    });
+
+    resetBtn.addEventListener('click', resetTimer);
+
+    [workInput, restInput, roundsInput].forEach(input => {
+      input.addEventListener('input', () => {
+        if (!isRunning && (phase === 'ready' || phase === 'done')) {
+          remaining = getSettings().work;
+          render();
+        }
+        totalRoundsDisplay.textContent = getSettings().rounds;
+      });
+    });
+
+    resetTimer();
+  </script></body>
+</html>
